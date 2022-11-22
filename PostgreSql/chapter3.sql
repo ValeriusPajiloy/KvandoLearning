@@ -1,9 +1,10 @@
+-- Active: 1669116588774@@127.0.0.1@5432@valeriy2000@testSch
 create table aircrafts(
     aircraft_code char(3) not null,
     model text not null, 
     range integer not null,
     check (range >0),
-    primary key (aircraft_code);
+    primary key (aircraft_code)
 );
 
 drop table aircrafts;
@@ -49,18 +50,16 @@ delete from aircrafts where aircraft_code = 'CN1'
 
 delete from aircrafts where range > 10000 and range < 3000;
 
-delete from aircrafts
+delete from aircrafts;
 
 create table seats(
     aircraft_code char(3) not null,
     seat_no char(4) not null,
-    fare_conditions char() not null,
-    check (
-        fare_conditions in ('Economy', 'Comfort', 'Business')
-    ),
+    fare_conditions text not null,
+    check ( fare_conditions in ('Economy', 'Comfort', 'Business')),
     primary key (aircraft_code, seat_no),
     foreign key (aircraft_code)
-        referensces aircrafts(aircraft_code)
+        references aircrafts(aircraft_code)
         on delete cascade
 );
 

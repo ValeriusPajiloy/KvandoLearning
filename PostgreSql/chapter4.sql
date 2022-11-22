@@ -1,3 +1,4 @@
+-- Active: 1669116588774@@127.0.0.1@5432@valeriy2000@public
 create table databases (is_open_source boolean, dbms_name text);
  
 insert into databases values (true, 'PostgreSQL');
