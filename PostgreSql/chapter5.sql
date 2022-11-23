@@ -226,16 +226,33 @@ alter table seats
                  when fare_conditions = 'Business' then 2
                  else 3
             end);
+alter table ticket_flights
+    drop constraint ticket_flights_fare_conditions_check,
+    alter column fare_conditions set data type INTEGER
+    using ( case when fare_conditions = 'Economy' then 1
+                 when fare_conditions = 'Business' then 2
+                 else 3
+            end);
 
 alter table seats
+    add foreign key (fare_conditions) REFERENCES fare_conditions(fare_conditions_code);
+
+alter table ticket_flights
     add foreign key (fare_conditions) REFERENCES fare_conditions(fare_conditions_code);
 
 alter table seats
     rename column fare_conditions to fare_conditions_code;
 
+alter table ticket_flights
+    rename column fare_conditions to fare_conditions_code;
+
 alter table seats
     rename constraint seats_fare_conditions_fkey
     to seats_fare_conditions_code_fkey;
+
+alter table ticket_flights
+    rename constraint ticket_flights_fare_conditions_fkey
+    to ticket_flights_fare_conditions_code_fkey;
 
 alter table fare_conditions add unique (fare_conditions_name);
 
@@ -403,13 +420,21 @@ insert into students
 
 alter table students
     alter column doc_ser set data type char(4);
---Задание 11
 
-
---Задание 12
---Задание 13
---Задание 14
---Задание 15
---Задание 16
---Задание 17
 --Задание 18
+alter table aircrafts add column specifications jsonb;
+update aircrafts
+    set specifications = '{
+        "crew": 2,
+        "engines": {
+            "type":"IAE V2500",
+            "num": 2
+        }
+    }'::jsonb
+where aircraft_code = '320';
+select model, specifications from aircrafts
+where aircraft_code = '320';
+select model, specifications->'engines' as engines from aircrafts
+where aircraft_code = '320';
+select model, specifications #> '{engines, type}' as engines from aircrafts
+where aircraft_code = '320';
