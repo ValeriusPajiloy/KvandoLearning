@@ -1,4 +1,4 @@
--- Active: 1669116588774@@127.0.0.1@5432@valeriy2000@testSch
+-- Active: 1669274822137@@127.0.0.1@5432@demo@bookings
 
 select * from aircrafts where model like 'Airbus%';
 
@@ -412,3 +412,346 @@ create materialized view routes as
 
     refresh MATERIALIZED view routes;
     SELECT * from routes;
+
+--Задание 1
+
+select count(*) from tickets;
+select count(*) from tickets where passenger_name like '%';
+select count(*) from tickets where passenger_name like '% %';
+select count(*) from tickets where passenger_name like '% % %';
+select count(*) from tickets where passenger_name like '% %%';
+
+--Задание 2
+select passenger_name
+from tickets
+where passenger_name like '___ %';
+
+select passenger_name
+from tickets
+where passenger_name like '% _____';
+
+--Задание 6
+select 
+    r.flight_no,
+    a.model
+from routes as r
+join aircrafts as a on r.aircraft_code = a.aircraft_code
+where a.model like 'Боинг%'
+GROUP BY r.flight_no, a.model
+ORDER BY r.flight_no, a.model;
+
+--Задние 7 
+select distinct flight_no, departure_city, arrival_city
+from routes as r
+join aircrafts as a on r.aircraft_code = a.aircraft_code
+where a.model like 'Боинг 777-300'
+ORDER BY 1;
+
+select distinct LEAST(departure_city, arrival_city), GREATEST(departure_city, arrival_city)
+from routes as r
+join aircrafts as a on r.aircraft_code = a.aircraft_code
+where a.model like 'Боинг 777-300'
+order by 1;
+
+--Задание 8
+select distinct t.passenger_name, count(*)
+from tickets as t
+full join bookings as b on t.book_ref = b.book_ref
+group by t.passenger_name;
+
+--Задание 9
+select count(*)
+from routes
+where departure_city = 'Москва'
+and arrival_city = 'Санкт-Петербург';
+
+select departure_city, arrival_city, count(*)
+from routes
+where departure_city = 'Москва'
+and arrival_city = 'Санкт-Петербург'
+GROUP BY (departure_city, arrival_city);
+
+--Задание 10 
+select t.departure_city, count(*) as count_fly
+from(
+    select departure_city, arrival_city
+    from routes
+    group by departure_city, arrival_city
+) as t
+group by departure_city
+order by count_fly desc;
+
+--Задание 11
+select 
+    arrival_city,
+    count(*) as count_ways
+from routes
+where departure_city = 'Москва' and array_length(days_of_week, 1)=7
+group by arrival_city
+order by count_ways desc
+limit 5;
+
+--Задание 12
+select 'Понедельник' as day_of_week, count(*) as num_flights
+from routes
+where departure_city = 'Москва'
+and days_of_week @> '{ 1 }'::integer[];
+
+select unnest(days_of_week) as day_of_week,
+       count(*) as num_flights
+from routes
+where departure_city = 'Москва'
+group by day_of_week
+order by day_of_week;
+
+SELECT
+    flight_no,
+    unnest(days_of_week) as day_of_week
+from routes
+where departure_city = 'Москва'
+ORDER BY flight_no;
+
+select dw.name_of_day, count(*) as num_flights
+from (
+    select unnest(days_of_week) as num_of_day
+    from routes
+    where departure_city = 'Москва'
+)as r,
+unnest( '{1,2,3,4,5,6,7}'::integer[], '{"Пн.","Вт.","Ср.","Чт.","Пт.","Сб.","Вс."}'::text[]) as dw(num_of_day, name_of_day)
+where r.num_of_day = dw.num_of_day
+group by r.num_of_day, dw.name_of_day
+order by r.num_of_day;
+
+select dw.name_of_day, count(*) as num_flights
+from (
+    select unnest(days_of_week) as num_of_day
+    from routes
+    where departure_city = 'Москва'
+)as r,
+unnest('{"Пн.","Вт.","Ср.","Чт.","Пт.","Сб.","Вс."}'::text[])
+WITH ORDINALITY as dw(name_of_day, num_of_day)
+where r.num_of_day = dw.num_of_day
+group by r.num_of_day, dw.name_of_day
+order by r.num_of_day;
+
+--Задание 13
+
+select f.departure_city, f.arrival_city, max(tf.amount), min(tf.amount)
+from flights_v as f
+join ticket_flights as tf on f.flight_id = tf.flight_id
+group by 1,2
+order by 1,2;
+
+select f.departure_city, f.arrival_city, max(tf.amount) as max_a, min(tf.amount) as min_a
+from flights_v as f
+full join ticket_flights as tf on f.flight_id = tf.flight_id
+group by 1,2
+having max(tf.amount) is null
+order by 3,4 desc;
+
+--Задание 14
+select left(passenger_name, strpos(passenger_name, ' ') - 1) as firstname,
+    count(*)
+from tickets
+GROUP BY 1
+ORDER BY 2 desc;
+
+select right(passenger_name, character_length(passenger_name) - strpos(passenger_name, ' ')) as firstname,
+    count(*)
+from tickets
+GROUP BY 1
+ORDER BY 2 desc;
+
+--Задание 17
+select
+    a.aircraft_code,
+    a.model,
+    s.fare_conditions,
+    count(*)
+from aircrafts as a
+join seats as s on s.aircraft_code = a.aircraft_code
+group by a.aircraft_code, a.model,s.fare_conditions
+ORDER BY 1,3;
+
+--Задание 18
+select
+    a.aircraft_code as a_code,
+    a.model,
+    r.aircraft_code as r_code,
+    count( r.aircraft_code ) as num_routes,
+    round(count( r.aircraft_code )::numeric / s.count_all::numeric, 3) as fraction
+from aircrafts as a, (select count(*) as count_all from routes) as s, routes as r
+where r.aircraft_code = a.aircraft_code
+group by 1,2,3,s.count_all
+ORDER BY 4 desc;
+
+--Задание 19
+with recursive ranges (min_sum, max_sum) as 
+(values (0, 100000),
+        (100000, 200000),
+        (200000, 300000)
+    union ALL
+    select min_sum + 100000, max_sum + 100000
+    from ranges
+    where max_sum < (select max(total_amount) from bookings)
+)
+select * from ranges;
+
+with recursive ranges (min_sum, max_sum) as 
+(values (0, 100000)
+    union ALL
+    select min_sum + 100000, max_sum + 100000
+    from ranges
+    where max_sum < (select max(total_amount) from bookings)
+)
+select min_sum + 100000, max_sum + 100000
+    from ranges
+    where max_sum < (select max(total_amount) from bookings);
+
+select max(total_amount) from bookings;
+
+with recursive ranges (level, min_sum, max_sum) as 
+(values (0, 0, 100000)
+    union ALL
+    select level + 1,min_sum + 100000, max_sum + 100000
+    from ranges
+    where max_sum < (select max(total_amount) from bookings)
+)
+select * from ranges;
+
+with recursive ranges (level, min_sum, max_sum) as 
+(values (0, 0, 100000)
+    union
+    select level + 1,min_sum + 100000, max_sum + 100000
+    from ranges
+    where max_sum < (select max(total_amount) from bookings)
+)
+select * from ranges;
+
+--Задание 20
+with recursive ranges (min_sum, max_sum) as 
+(values (0, 100000)
+    union ALL
+    select min_sum + 100000, max_sum + 100000
+    from ranges
+    where max_sum < (select max(total_amount) from bookings)
+)
+select 
+    r.min_sum, r.max_sum, count(b.*)
+from bookings as b
+right join ranges as r on b.total_amount >= r.min_sum
+                    and b.total_amount < r.max_sum
+GROUP BY r.min_sum, r.max_sum
+order by r.min_sum;
+
+--Задание 21
+select distinct a.city
+from airports as a
+where not exists(
+    select * from routes as r
+    where r.departure_city = 'Москва'
+    and r.arrival_city = a.city
+)
+and a.city <> 'Москва'
+order by city;
+
+select city
+from airports
+where city <> 'Москва'
+except
+select arrival_city
+from routes
+where departure_city = 'Москва'
+order by city;
+
+--Задание 22
+select aa.city, aa.airport_code, aa.airport_name
+from (
+    select city, count(*)
+    from airports
+    group by city 
+    having count(*) > 1
+)as a
+join airports as aa on a.city = aa.city
+order by aa.city, aa.airport_name;
+
+select aa.city, aa.airport_code, aa.airport_name
+from (
+    select city
+    from airports
+    group by city 
+    having count(*) > 1
+)as a
+join airports as aa on a.city = aa.city
+order by aa.city, aa.airport_name;
+
+--Задание 23
+select count(*)
+from (select distinct city from airports) as a1
+join (select distinct city from airports) as a2
+     on a1.city <> a2.city;
+
+with c as (select distinct city from airports)
+select count(*)
+from c as a1
+join c as a2
+     on a1.city <> a2.city;
+
+--Задание 24
+select * from airports
+where timezone in ('Asia/Novokuznetsk', 'Asia/Krasnoyarsk');
+
+select * from airports
+where timezone = any(values ('Asia/Novokuznetsk'), ('Asia/Krasnoyarsk'));
+select * from airports;
+
+select departure_city, count(*)
+from routes
+group by departure_city
+having departure_city in (
+    select city
+    from airports
+    where coordinates[0] > 150
+)
+order by count desc;
+
+select departure_city, count(*)
+from routes
+group by departure_city
+having departure_city = any(
+    select city
+    from airports
+    where coordinates[0] > 150
+)
+order by count desc;
+
+
+--Задание 25
+with tickets_seats as
+(
+    select 
+        f.flight_id,
+        f.flight_no,
+        f.departure_city,
+        f.arrival_city,
+        f.aircraft_code,
+        count(tf.ticket_no) as fact_passengers,
+        (
+            select count(s.seat_no)
+            from seats as s
+            where s.aircraft_code = f.aircraft_code
+        )as total_seats
+    from flights_v as f
+    join ticket_flights as tf on f.flight_id = tf.flight_id
+    where f.status = 'Arrived'
+    group by 1,2,3,4,5
+)
+select 
+    ts.departure_city,
+    ts.arrival_city,
+    sum(ts.fact_passengers) as sum_pass,
+    sum(ts.total_seats) as sum_seats,
+    round(sum(ts.fact_passengers)::numeric / sum(ts.total_seats)::numeric, 2) as frac
+from tickets_seats as ts
+group by ts.departure_city, ts.arrival_city
+order by ts.departure_city
