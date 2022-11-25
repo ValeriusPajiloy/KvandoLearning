@@ -754,4 +754,90 @@ select
     round(sum(ts.fact_passengers)::numeric / sum(ts.total_seats)::numeric, 2) as frac
 from tickets_seats as ts
 group by ts.departure_city, ts.arrival_city
-order by ts.departure_city
+order by ts.departure_city;
+
+--Задание 25
+select *
+from flights_v
+where departure_city = 'Кемерово'
+and arrival_city = 'Москва'
+and actual_arrival < bookings.now(); 
+
+select t.passenger_name, b.seat_no
+from (
+    ticket_flights as tf
+    join tickets as t on tf.ticket_no = t.ticket_no
+)
+join  boarding_passes as b
+    on tf.ticket_no = b.ticket_no
+    and tf.flight_id = b.flight_id
+where tf.flight_id = 54759
+order by t.passenger_name;
+
+select 
+    t.passenger_name, 
+    substr(t.passenger_name, strpos(t.passenger_name, ' ')+1) as lastname,
+    left(t.passenger_name, strpos(t.passenger_name, ' ')-1) as firstname,
+    b.seat_no
+from (
+    ticket_flights as tf
+    join tickets as t on tf.ticket_no = t.ticket_no
+)
+join  boarding_passes as b
+    on tf.ticket_no = b.ticket_no
+    and tf.flight_id = b.flight_id
+where tf.flight_id = 54759
+order by 2,3;
+
+select s.seat_no, p.passenger_name
+from seats as s
+left join(
+    select t.passenger_name, b.seat_no
+    from (
+        ticket_flights as tf
+        join tickets as t on tf.ticket_no = t.ticket_no
+    )
+    join  boarding_passes as b
+        on tf.ticket_no = b.ticket_no
+        and tf.flight_id = b.flight_id
+    where tf.flight_id = 54759
+    ) as p on s.seat_no= p.seat_no
+where s.aircraft_code = 'SU9'
+order by s.seat_no;
+
+select s.seat_no, p.passenger_name, p.email
+from seats as s
+left join(
+    select t.passenger_name, b.seat_no, t.contact_data->'email' as email
+    from (
+        ticket_flights as tf
+        join tickets as t on tf.ticket_no = t.ticket_no
+    )
+    join  boarding_passes as b
+        on tf.ticket_no = b.ticket_no
+        and tf.flight_id = b.flight_id
+    where tf.flight_id = 54759
+    ) as p on s.seat_no= p.seat_no
+where s.aircraft_code = 'SU9'
+order by 
+    left(s.seat_no, length(s.seat_no)-1)::integer,
+    right(s.seat_no,1);
+
+with p as (
+    select t.passenger_name, b.seat_no, t.contact_data->'email' as email
+    from (
+        ticket_flights as tf
+        join tickets as t on tf.ticket_no = t.ticket_no
+    )
+    join  boarding_passes as b
+        on tf.ticket_no = b.ticket_no
+        and tf.flight_id = b.flight_id
+    where tf.flight_id = 54759
+)
+select s.seat_no, s.fare_conditions, p.passenger_name, p.email
+from seats as s
+left join p on s.seat_no= p.seat_no
+where s.aircraft_code = 'SU9'
+order by 
+    left(s.seat_no, length(s.seat_no)-1)::integer,
+    right(s.seat_no,1);
