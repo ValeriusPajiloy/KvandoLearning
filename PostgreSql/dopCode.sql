@@ -13,5 +13,6 @@ select '(fat | rat) <-> cat'::tsquery;
 select 'fat:ab & cat'::tsquery;
 select 'super:*'::tsquery;
 select to_tsquery('Fat:ab & Cats');
+select to_tsquery( 'postgres:*' );
 select to_tsvector( 'postgraduate' ) @@ to_tsquery( 'postgres:*' );
 select to_tsvector( 'postgraduate' ), to_tsquery( 'postgres:*' );
