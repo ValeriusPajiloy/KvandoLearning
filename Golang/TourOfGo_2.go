@@ -87,6 +87,12 @@ func main() {
 	defer fmt.Println("bye")
 	defer fmt.Println("after main()")
 
+	fmt.Println("counting")
+
+	for i := 0; i < 10; i++ {
+		defer fmt.Println(i)
+	}
+
 }
 func sqrt(x float64) string {
 	if x < 0 {
