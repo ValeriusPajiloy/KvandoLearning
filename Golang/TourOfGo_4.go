@@ -29,6 +29,10 @@ type Person struct {
 }
 type IPAddr [4]byte
 
+type P struct {
+	t *T
+}
+
 func main() {
 	fmt.Println("--1-------------------------------")
 
@@ -183,6 +187,16 @@ func main() {
 	}
 
 	fmt.Println("--19-------------------------------")
+
+	temp := &T{
+		S: "str",
+	}
+
+	ptemp := &P{
+		t: temp,
+	}
+
+	ptemp.t.S = "qwr"
 
 	fmt.Println("--20-------------------------------")
 
